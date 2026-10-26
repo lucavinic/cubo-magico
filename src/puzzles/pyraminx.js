@@ -14,10 +14,10 @@ const VERT = {
 
 // face oposta a cada vértice
 const FACES = [
-  { name: 'F', opposite: 'B', color: '#12a150' }, // frente: verde
-  { name: 'E', opposite: 'R', color: '#d81f26' }, // esquerda: vermelho
-  { name: 'Di', opposite: 'L', color: '#1e5bd6' }, // direita: azul
-  { name: 'Y', opposite: 'U', color: '#ffd500' }, // baixo: amarelo
+  { name: 'F', opposite: 'B', color: '#00a651', where: 'Frente' }, // verde
+  { name: 'E', opposite: 'R', color: '#e0162b', where: 'Esquerda' }, // vermelho
+  { name: 'Di', opposite: 'L', color: '#0b5cff', where: 'Direita' }, // azul
+  { name: 'Y', opposite: 'U', color: '#ffd60a', where: 'Base (embaixo)' }, // amarelo
 ];
 
 export const PYRA_COLOR_NAMES = { F: 'verde', E: 'vermelho', Di: 'azul', Y: 'amarelo' };
@@ -28,6 +28,13 @@ const VERT_LABEL = {
   R: 'da direita',
   B: 'de trás',
 };
+
+const LEGEND = FACES.map((f) => ({
+  letter: f.name,
+  where: f.where,
+  color: f.color,
+  colorName: { F: 'verde', E: 'vermelho', Di: 'azul', Y: 'amarelo' }[f.name],
+}));
 
 function describe(mv) {
   const tip = mv.name === mv.name.toLowerCase();
@@ -66,6 +73,7 @@ export const pyraminxDef = {
   moves,
   describe,
   colorNames: PYRA_COLOR_NAMES,
+  legend: LEGEND,
   moveGroups: [['U', 'L', 'R', 'B'], ['u', 'l', 'r', 'b']],
   camera: { position: [2.9, 1.4, 4.6] },
   // letras nas pontas, que é o que a notação usa

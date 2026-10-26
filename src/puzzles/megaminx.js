@@ -10,19 +10,25 @@ function dir(polar, azimuthDeg) {
 }
 
 const FACE_LIST = [
-  { name: 'U', normal: [0, 1, 0], color: '#c9c9c9', label: 'de cima', cor: 'cinza' },
-  { name: 'F', normal: dir(THETA, 0), color: '#12a150', label: 'da frente', cor: 'verde' },
-  { name: 'R', normal: dir(THETA, 72), color: '#d81f26', label: 'da direita', cor: 'vermelho' },
-  { name: 'BR', normal: dir(THETA, 144), color: '#1e5bd6', label: 'de trás à direita', cor: 'azul' },
-  { name: 'BL', normal: dir(THETA, 216), color: '#ffd500', label: 'de trás à esquerda', cor: 'amarelo' },
-  { name: 'L', normal: dir(THETA, 288), color: '#7d3cc8', label: 'da esquerda', cor: 'roxo' },
-  { name: 'DR', normal: dir(Math.PI - THETA, 36), color: '#ff8fc4', label: 'de baixo à direita', cor: 'rosa' },
-  { name: 'DBR', normal: dir(Math.PI - THETA, 108), color: '#ff7a00', label: 'de baixo, atrás à direita', cor: 'laranja' },
-  { name: 'B', normal: dir(Math.PI - THETA, 180), color: '#97e04a', label: 'de trás (embaixo)', cor: 'verde-claro' },
-  { name: 'DBL', normal: dir(Math.PI - THETA, 252), color: '#5fcdff', label: 'de baixo, atrás à esquerda', cor: 'azul-claro' },
-  { name: 'DL', normal: dir(Math.PI - THETA, 324), color: '#f4e7a6', label: 'de baixo à esquerda', cor: 'creme' },
+  { name: 'U', normal: [0, 1, 0], color: '#b4b9c2', label: 'de cima', cor: 'cinza' },
+  { name: 'F', normal: dir(THETA, 0), color: '#00a651', label: 'da frente', cor: 'verde' },
+  { name: 'R', normal: dir(THETA, 72), color: '#d0112b', label: 'da direita', cor: 'vermelho' },
+  { name: 'BR', normal: dir(THETA, 144), color: '#0b4fe0', label: 'de trás à direita', cor: 'azul' },
+  { name: 'BL', normal: dir(THETA, 216), color: '#ffd60a', label: 'de trás à esquerda', cor: 'amarelo' },
+  { name: 'L', normal: dir(THETA, 288), color: '#8a3ffc', label: 'da esquerda', cor: 'roxo' },
+  { name: 'DR', normal: dir(Math.PI - THETA, 36), color: '#ff6fb5', label: 'de baixo à direita', cor: 'rosa' },
+  { name: 'DBR', normal: dir(Math.PI - THETA, 108), color: '#ff7b00', label: 'de baixo, atrás à direita', cor: 'laranja' },
+  { name: 'B', normal: dir(Math.PI - THETA, 180), color: '#9be22d', label: 'de trás (embaixo)', cor: 'verde-limão' },
+  { name: 'DBL', normal: dir(Math.PI - THETA, 252), color: '#4fd2ff', label: 'de baixo, atrás à esquerda', cor: 'azul-claro' },
+  { name: 'DL', normal: dir(Math.PI - THETA, 324), color: '#a0682e', label: 'de baixo à esquerda', cor: 'marrom' },
   { name: 'D', normal: [0, -1, 0], color: '#ffffff', label: 'de baixo', cor: 'branco' },
 ];
+
+const WHERE = {
+  U: 'Cima', F: 'Frente', R: 'Direita', L: 'Esquerda', BR: 'Trás-direita', BL: 'Trás-esquerda',
+  DR: 'Baixo-direita', DL: 'Baixo-esquerda', DBR: 'Baixo-trás-direita', DBL: 'Baixo-trás-esquerda', B: 'Trás (baixo)', D: 'Baixo',
+};
+const LEGEND = FACE_LIST.map((f) => ({ letter: f.name, where: WHERE[f.name], color: f.color, colorName: f.cor }));
 
 export const MEGA_COLOR_NAMES = Object.fromEntries(FACE_LIST.map((f) => [f.name, f.cor]));
 const LABEL = Object.fromEntries(FACE_LIST.map((f) => [f.name, f.label]));
@@ -53,6 +59,7 @@ export const megaminxDef = {
   moves,
   describe,
   colorNames: MEGA_COLOR_NAMES,
+  legend: LEGEND,
   moveGroups: [
     ['U', 'F', 'R', 'L', 'BR', 'BL'],
     ['D', 'DR', 'DL', 'DBR', 'DBL', 'B'],

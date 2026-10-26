@@ -22,6 +22,7 @@
     --text: #151a22;
     --muted: #5d6878;
     --chip: #eef1f6;
+    --accent-2: #a86f00;
     color-scheme: light;
   }
 }
@@ -477,4 +478,148 @@ kbd {
   .painel {
     padding: 16px;
   }
+}
+
+/* ---------- lições: legenda, reconhecer, dicas ---------- */
+
+.passo {
+  margin: 0 0 2px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.cores {
+  margin-top: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.cores summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cores-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.2;
+}
+
+.cor strong {
+  display: block;
+  text-transform: capitalize;
+}
+
+.cor small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.amostra {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 3px solid #111316;
+  display: inline-block;
+}
+
+.amostra.mini {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  border-radius: 3px;
+  vertical-align: -2px;
+}
+
+.amostra.escura {
+  background: #2c3038;
+}
+
+.caso {
+  margin-top: 16px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+.caso-titulo {
+  font-size: 16px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  color: var(--text) !important;
+}
+
+.reconhecer {
+  background: color-mix(in srgb, var(--accent-2) 12%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--accent-2) 45%, var(--line));
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  line-height: 1.45;
+}
+
+.reconhecer strong,
+.oque {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.reconhecer strong {
+  color: color-mix(in srgb, var(--accent-2) 70%, var(--text));
+}
+
+.oque {
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+.legenda .rotulo {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.dicas {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+
+.dicas li {
+  margin-bottom: 6px;
+}
+
+.navegar {
+  margin: 18px 0 8px;
+}
+
+.btn.proximo {
+  width: 100%;
+  text-align: left;
+  font-weight: 600;
+  border-color: var(--accent);
+  color: var(--accent);
+  padding: 12px 14px;
+}
+
+.btn.proximo:hover {
+  background: color-mix(in srgb, var(--accent) 10%, var(--card));
 }

@@ -6,8 +6,8 @@ let problems = 0;
 for (const [id, { def, lessons }] of Object.entries(PUZZLES)) {
   const pieces = buildPuzzle(def);
   for (const lesson of lessons) {
-    const colored = lesson.colored;
     for (const step of lesson.steps) {
+      const colored = step.colored || lesson.colored;
       const moves = parseAlg(step.alg.replace(/\|/g, ' '));
       const s = new PuzzleState(def, pieces);
       s.applyAlg(step.setup !== undefined ? parseAlg(step.setup) : invertMoves(moves));

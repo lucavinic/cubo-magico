@@ -116,7 +116,7 @@ function selectStep(j) {
   const s = step();
   app.moves = parseAlg(s.alg);
   app.setup = s.setup !== undefined ? parseAlg(s.setup) : invertMoves(app.moves);
-  view.paint(lesson().colored, s.focus);
+  view.paint(s.colored || lesson().colored, s.focus);
   goTo(0);
 }
 
@@ -189,10 +189,44 @@ function moveButtons() {
     .join('');
 }
 
+// texto com \n vira parágrafos
+function paras(text) {
+  return String(text)
+    .split('\n')
+    .map((t) => `<p>${esc(t)}</p>`)
+    .join('');
+}
+
+function legendHtml(def, open, lessonNote = true) {
+  return `<details class="cores" ${open ? 'open' : ''}>
+    <summary>Cores e lados</summary>
+    <div class="cores-grade">${def.legend
+      .map(
+        (c) => `<div class="cor"><span class="amostra" style="background:${c.color}"></span>
+          <span><strong>${esc(c.colorName)}</strong><small>${esc(c.letter)} · ${esc(c.where)}</small></span></div>`,
+      )
+      .join('')}</div>
+    ${lessonNote ? '<p class="teclas">Peças <span class="amostra mini escura"></span> escuras = ainda não importam nesta etapa. A peça que pisca é a da vez.</p>' : ''}
+  </details>`;
+}
+
+function nextLink() {
+  const l = lesson();
+  const lessons = current().lessons;
+  if (app.stepIdx < l.steps.length - 1) {
+    return `<button class="btn proximo" id="proxCaso">Próximo caso: ${esc(l.steps[app.stepIdx + 1].title)} →</button>`;
+  }
+  if (app.lessonIdx < lessons.length - 1) {
+    return `<button class="btn proximo" id="proxLicao">Próxima lição: ${esc(lessons[app.lessonIdx + 1].title)} →</button>`;
+  }
+  return `<p class="status ok">Você chegou ao fim das lições! Vá em "Praticar", embaralhe e monte sozinho.</p>`;
+}
+
 function renderLessonPanel() {
   const { def } = current();
   const l = lesson();
   const s = step();
+  const lessons = current().lessons;
   const total = app.moves.length;
   const next = app.moves[app.cursor];
   const note = s.notes && s.notes[app.cursor];
@@ -202,30 +236,19 @@ function renderLessonPanel() {
   if (app.trying) {
     legenda = `<p>Sua vez! Use os botões abaixo (ou o teclado) para chegar no objetivo. A seta não aparece aqui.</p>`;
   } else if (!atEnd) {
-    legenda = `<span class="mv">${esc(moveToString(next))}</span>${esc(def.describe(next))}${
+    legenda = `<span class="rotulo">Próximo giro</span><span class="mv">${esc(moveToString(next))}</span>${esc(def.describe(next))}${
       note ? `<span class="nota">${esc(note)}</span>` : ''
     }`;
   } else {
-    legenda = `<p><strong>Pronto!</strong> Assim deve ficar. Use ◀ para voltar ou ▶ para ver de novo.</p>`;
+    legenda = `<p><strong>Pronto!</strong> Assim deve ficar. Use ◀ para voltar ou "Ver de novo".</p>`;
   }
 
-  $('#painel').innerHTML = `
-    <h2>${esc(l.title)}</h2>
-    <p>${esc(l.intro)}</p>
-    <div class="objetivo"><strong>Como deve ficar</strong>${esc(l.goal)}</div>
-
-    ${l.steps.length > 1 ? `<h3>Casos</h3><div class="casos">${l.steps
-      .map((st, i) => `<button data-step="${i}" class="${i === app.stepIdx ? 'ativo' : ''}">${esc(st.title)}</button>`)
-      .join('')}</div>` : ''}
-
-    <h3>${esc(s.title)}</h3>
-    <p>${esc(s.text)}</p>
+  const player = total
+    ? `
     <div class="alg">${app.moves
       .map((m, i) => `<span class="${i < app.cursor ? 'feito' : i === app.cursor && !app.trying ? 'atual' : ''}">${esc(moveToString(m))}</span>`)
       .join('')}</div>
-
     <div class="legenda">${legenda}</div>
-
     ${app.trying ? `
       <h3>Seus movimentos</h3>
       <div class="movs" id="movs">${moveButtons()}</div>
@@ -233,22 +256,46 @@ function renderLessonPanel() {
         <button class="btn" id="tentarDeNovo">Recomeçar o caso</button>
         <button class="btn" id="sairTentar">Voltar à demonstração</button>
       </div>
-      <p class="teclas">Teclado: letra do giro (ex.: <kbd>R</kbd>), com <kbd>Shift</kbd> para o contrário (R').</p>
+      <p class="teclas">Teclado: letra do giro (ex.: <kbd>R</kbd>), com <kbd>Shift</kbd> para o contrário (R'). Passe o mouse num botão para ver o que ele faz.</p>
     ` : `
       <div class="controles">
         <button class="btn" id="inicio" title="Voltar ao começo">⟲</button>
         <button class="btn" id="voltar" ${app.cursor === 0 ? 'disabled' : ''} title="Movimento anterior">◀</button>
         <button class="btn primario" id="tocar">${app.playing ? 'Pausar' : atEnd ? 'Ver de novo' : 'Tocar'}</button>
         <button class="btn" id="avancar" ${atEnd ? 'disabled' : ''} title="Próximo movimento">▶</button>
-        <button class="btn" id="objetivo">${atEnd ? 'Ver o começo' : 'Ver o objetivo'}</button>
+        <button class="btn" id="objetivo">${atEnd ? 'Ver o começo' : 'Ver o resultado'}</button>
       </div>
       <div class="progresso">Movimento ${Math.min(app.cursor + (atEnd ? 0 : 1), total)} de ${total}</div>
       <label class="velocidade">Velocidade
         <input type="range" id="vel" min="0.15" max="1.3" step="0.05" value="${1.45 - app.speed}" />
       </label>
       <div class="controles"><button class="btn" id="tentar">Tentar sozinho</button></div>
-      <p class="teclas">Atalhos: <kbd>Espaço</kbd> tocar/pausar, <kbd>→</kbd> próximo, <kbd>←</kbd> anterior.</p>
-    `}
+      <p class="teclas">Dica: use ▶ para ir um giro de cada vez e repetir no seu cubo. Atalhos: <kbd>Espaço</kbd> tocar/pausar, <kbd>→</kbd> próximo, <kbd>←</kbd> anterior.</p>
+    `}`
+    : `<p class="teclas">Arraste o modelo com o mouse para ver as peças destacadas por todos os lados.</p>`;
+
+  $('#painel').innerHTML = `
+    <p class="passo">Lição ${app.lessonIdx + 1} de ${lessons.length}</p>
+    <h2>${esc(l.title)}</h2>
+    ${paras(l.intro)}
+    <div class="objetivo"><strong>Como deve ficar no fim</strong>${esc(l.goal)}</div>
+    ${legendHtml(def, l.id === 'comece' || app.legendOpen)}
+
+    ${l.steps.length > 1 ? `<h3>${l.id === 'comece' ? 'Veja cada parte' : 'Casos'}</h3><div class="casos">${l.steps
+      .map((st, i) => `<button data-step="${i}" class="${i === app.stepIdx ? 'ativo' : ''}">${esc(st.title)}</button>`)
+      .join('')}</div>` : ''}
+
+    <div class="caso">
+      <h3 class="caso-titulo">${esc(s.title)}</h3>
+      ${s.look ? `<div class="reconhecer"><strong>Como reconhecer</strong>${esc(s.look)}</div>` : ''}
+      ${s.look ? '<strong class="oque">O que fazer</strong>' : ''}
+      ${paras(s.text)}
+      ${player}
+    </div>
+
+    ${l.tips && l.tips.length ? `<h3>Dicas</h3><ul class="dicas">${l.tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+
+    <div class="navegar">${nextLink()}</div>
   `;
 }
 
@@ -257,6 +304,8 @@ $('#painel').addEventListener('click', (e) => {
   if (!b) return;
   if (app.mode === 'praticar') return practiceClick(b);
   if (b.dataset.step && !view.busy) return selectStep(Number(b.dataset.step));
+  if (b.id === 'proxCaso' && !view.busy) return selectStep(app.stepIdx + 1), scrollPanelTop();
+  if (b.id === 'proxLicao' && !view.busy) return selectLesson(app.lessonIdx + 1), scrollPanelTop();
   if (b.dataset.mv) return enqueue(parseAlg(b.dataset.mv)[0]);
   if (view.busy && b.id !== 'tocar') return;
   switch (b.id) {
@@ -293,6 +342,20 @@ $('#painel').addEventListener('click', (e) => {
   }
 });
 
+function scrollPanelTop() {
+  $('#painel').scrollTop = 0;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// lembra se a legenda de cores ficou aberta
+$('#painel').addEventListener(
+  'toggle',
+  (e) => {
+    if (e.target.classList && e.target.classList.contains('cores') && lesson().id !== 'comece') app.legendOpen = e.target.open;
+  },
+  true,
+);
+
 $('#painel').addEventListener('input', (e) => {
   if (e.target.id === 'vel') app.speed = 1.45 - Number(e.target.value);
 });
@@ -318,7 +381,7 @@ function runQueue(fast = false) {
 
 function afterUserMove(mv, fast) {
   if (app.mode === 'aprender' && app.trying) {
-    if (state.isSolved(lesson().colored)) toast('Isso! Você chegou no objetivo.');
+    if (state.isSolved(step().colored || lesson().colored)) toast('Isso! Você chegou no objetivo.');
     return;
   }
   if (app.mode === 'praticar') {
@@ -394,6 +457,7 @@ function renderPracticePanel() {
       .join('')}</div>` : ''}
     <h3>Movimentos</h3>
     <div class="movs">${moveButtons()}</div>
+    ${legendHtml(current().def, false, false)}
     <p class="status ${solved ? 'ok' : ''}">${solved ? 'Montado.' : `Embaralhado · ${app.history.length} movimento(s) seus`}</p>
     <p class="teclas">Teclado: letra do giro (ex.: <kbd>R</kbd>, <kbd>U</kbd>), com <kbd>Shift</kbd> para o contrário. Passe o mouse num botão para ver o que ele faz.</p>
   `;

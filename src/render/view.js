@@ -4,8 +4,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { sub, cross, dot, norm, add, scale, len } from '../engine/math.js';
 
-const GRAY = new THREE.Color('#4b515c');
+// adesivo que ainda não importa na etapa: escuro, para não parecer uma cor
+const GRAY = new THREE.Color('#2c3038');
 const BODY = new THREE.Color('#111316');
+const BASE_GLOW = 0.28;
 
 function insetPolygon(verts, normal, m) {
   // tira vértices repetidos
@@ -64,15 +66,21 @@ function polyGeometry(polys) {
   return g;
 }
 
-function labelSprite(text) {
+// etiqueta redonda; com cor, vira uma "bolinha" da cor da face com a letra
+function labelSprite(text, color) {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = 'rgba(15,17,21,0.78)';
+  ctx.fillStyle = color || 'rgba(15,17,21,0.78)';
   ctx.beginPath();
-  ctx.arc(64, 64, 56, 0, Math.PI * 2);
+  ctx.arc(64, 64, 54, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#ffffff';
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = '#111316';
+  ctx.stroke();
+  const rgb = new THREE.Color(color || '#000000');
+  const light = 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b > 0.55;
+  ctx.fillStyle = color && light ? '#111316' : '#ffffff';
   ctx.font = `bold ${text.length > 2 ? 40 : text.length > 1 ? 52 : 64}px system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -148,10 +156,11 @@ export class PuzzleView {
         const poly = insetPolygon(st.verts, st.normal, inset).map((v) => add(shrink(v), scale(st.normal, 0.004)));
         const mat = new THREE.MeshStandardMaterial({
           color: faceColor[st.face],
-          roughness: 0.35,
+          roughness: 0.45,
           metalness: 0,
-          emissive: new THREE.Color('#ffffff'),
-          emissiveIntensity: 0,
+          // brilho próprio leve: a cor não escurece nas faces em sombra
+          emissive: faceColor[st.face].clone(),
+          emissiveIntensity: BASE_GLOW,
         });
         const mesh = new THREE.Mesh(polyGeometry([poly]), mat);
         g.add(mesh);
@@ -163,9 +172,9 @@ export class PuzzleView {
     // letras das faces (fixas no espaço, como a notação)
     const labels =
       def.labels ||
-      def.faces.map((f) => ({ text: f.name, position: scale(norm(f.normal), f.dist + def.radius * 0.32) }));
+      def.faces.map((f) => ({ text: f.name, color: f.color, position: scale(norm(f.normal), f.dist + def.radius * 0.32) }));
     for (const l of labels) {
-      const s = labelSprite(l.text);
+      const s = labelSprite(l.text, l.color);
       s.position.set(...l.position);
       s.scale.setScalar(def.radius * 0.17);
       this.labels.add(s);
@@ -197,7 +206,8 @@ export class PuzzleView {
       for (const st of this.groups[i].userData.stickers) {
         const on = !colored || colored(p, st.face);
         st.mesh.material.color.copy(on ? st.color : GRAY);
-        st.mesh.material.emissiveIntensity = 0;
+        st.mesh.material.emissive.copy(on ? st.color : GRAY);
+        st.mesh.material.emissiveIntensity = BASE_GLOW;
         if (isFocus && on) this.focusMats.push(st.mesh.material);
       }
     });
@@ -266,7 +276,7 @@ export class PuzzleView {
       }
     }
     if (this.focusMats && this.focusMats.length) {
-      const v = 0.18 + 0.18 * Math.sin(performance.now() / 260);
+      const v = BASE_GLOW + 0.3 + 0.3 * Math.sin(performance.now() / 260);
       for (const m of this.focusMats) m.emissiveIntensity = v;
     }
     this.controls.update();
