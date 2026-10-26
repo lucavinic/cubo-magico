@@ -1,0 +1,17 @@
+{
+  "name": "cubo-magico",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5200 --strictPort",
+    "build": "vite build",
+    "verificar": "node tools/verificar.mjs"
+  },
+  "dependencies": {
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}

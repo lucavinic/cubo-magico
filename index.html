@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cubo Mágico Passo a Passo</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topo">
+      <div class="marca">
+        <span class="logo" aria-hidden="true"></span>
+        <div>
+          <h1>Cubo Mágico Passo a Passo</h1>
+          <p>Aprenda a montar girando o modelo em 3D</p>
+        </div>
+      </div>
+      <nav class="puzzles" id="puzzles" aria-label="Quebra-cabeça"></nav>
+    </header>
+
+    <main class="layout">
+      <aside class="lateral">
+        <div class="modos" role="tablist">
+          <button class="modo ativo" data-modo="aprender" role="tab">Aprender</button>
+          <button class="modo" data-modo="praticar" role="tab">Praticar</button>
+        </div>
+        <ol class="licoes" id="licoes"></ol>
+      </aside>
+
+      <section class="palco">
+        <div class="canvas" id="canvas"></div>
+        <div class="palco-barra">
+          <label class="chk"><input type="checkbox" id="letras" checked /> Letras das faces</label>
+          <button class="btn fantasma" id="centralizar">Centralizar</button>
+        </div>
+        <p class="dica-arraste">Arraste para girar o modelo · role para aproximar</p>
+        <div class="toast" id="toast" hidden></div>
+      </section>
+
+      <section class="painel" id="painel"></section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

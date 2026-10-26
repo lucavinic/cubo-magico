@@ -1,0 +1,480 @@
+:root {
+  --bg: #0f1115;
+  --bg-2: #161a21;
+  --card: #1b2029;
+  --line: #2a313d;
+  --text: #e9edf3;
+  --muted: #9aa4b2;
+  --accent: #ff3b6b;
+  --accent-2: #ffd500;
+  --ok: #2fbf71;
+  --chip: #232a35;
+  --radius: 12px;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f6f9;
+    --bg-2: #ffffff;
+    --card: #ffffff;
+    --line: #dde2ea;
+    --text: #151a22;
+    --muted: #5d6878;
+    --chip: #eef1f6;
+    color-scheme: light;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+  flex-wrap: wrap;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.marca h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.marca p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: conic-gradient(#d81f26 0 25%, #12a150 0 50%, #ffd500 0 75%, #1e5bd6 0);
+  box-shadow: inset 0 0 0 3px #111316;
+}
+
+.puzzles {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.puzzles button {
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 8px 14px;
+  border-radius: 999px;
+}
+
+.puzzles button.ativo {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr) 380px;
+  height: calc(100% - 66px);
+  min-height: 560px;
+}
+
+.lateral {
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  padding: 14px;
+  background: var(--bg-2);
+}
+
+.modos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--chip);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 14px;
+}
+
+.modo {
+  border: 0;
+  background: transparent;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.modo.ativo {
+  background: var(--card);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.licoes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.licoes button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--muted);
+}
+
+.licoes button:hover {
+  background: var(--chip);
+  color: var(--text);
+}
+
+.licoes button.ativo {
+  background: var(--chip);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.palco {
+  position: relative;
+  min-height: 380px;
+  background: radial-gradient(circle at 50% 40%, var(--bg-2), var(--bg) 70%);
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.palco-barra {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.chk {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.dica-arraste {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+  pointer-events: none;
+}
+
+.toast {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ok);
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.painel {
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+  padding: 18px;
+  background: var(--bg-2);
+}
+
+.painel h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.painel h3 {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.painel p {
+  line-height: 1.5;
+  margin: 6px 0;
+}
+
+.objetivo {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.objetivo strong {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-2);
+  margin-bottom: 4px;
+}
+
+.casos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.casos button {
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.casos button.ativo {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  font-weight: 600;
+}
+
+.alg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 10px 0;
+}
+
+.alg span {
+  font-family: Consolas, 'Cascadia Mono', monospace;
+  font-weight: 600;
+  background: var(--chip);
+  border-radius: 6px;
+  padding: 4px 8px;
+  min-width: 34px;
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+.alg span.feito {
+  opacity: 0.45;
+}
+
+.alg span.atual {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: transparent;
+}
+
+.legenda {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px;
+  min-height: 74px;
+}
+
+.legenda .mv {
+  font-family: Consolas, monospace;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--accent);
+  margin-right: 6px;
+}
+
+.legenda .nota {
+  display: block;
+  margin-top: 6px;
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.controles {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.btn:hover {
+  border-color: var(--muted);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn.primario {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  min-width: 96px;
+}
+
+.btn.fantasma {
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.velocidade {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+.progresso {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.movs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 5px;
+}
+
+.movs button {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 8px;
+  padding: 7px 0;
+  font-family: Consolas, monospace;
+  font-weight: 600;
+}
+
+.movs button:hover {
+  border-color: var(--accent);
+}
+
+.status {
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.status.ok {
+  color: var(--ok);
+}
+
+.teclas {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+kbd {
+  font-family: Consolas, monospace;
+  background: var(--chip);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 5px;
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+    grid-template-rows: minmax(420px, 60vh) auto;
+    height: auto;
+  }
+  .painel {
+    grid-column: 1 / -1;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 700px) {
+  .topo {
+    padding: 10px 16px;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 56vh auto;
+  }
+  .lateral {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 10px 16px;
+  }
+  .licoes {
+    display: flex;
+    overflow-x: auto;
+    gap: 4px;
+  }
+  .licoes button {
+    white-space: nowrap;
+  }
+  .painel {
+    padding: 16px;
+  }
+}
