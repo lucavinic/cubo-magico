@@ -107,6 +107,9 @@ export class PuzzleView {
     this.controls.enableDamping = true;
     this.controls.enablePan = false;
     this.controls.rotateSpeed = 0.9;
+    // até a pessoa mexer na câmera, ela se reajusta quando a tela muda de tamanho
+    this.userMoved = false;
+    this.controls.addEventListener('start', () => (this.userMoved = true));
 
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x445066, 1.6));
     const key = new THREE.DirectionalLight(0xffffff, 1.6);
@@ -132,9 +135,11 @@ export class PuzzleView {
   resize() {
     const w = this.container.clientWidth || 1;
     const h = this.container.clientHeight || 1;
+    this.size = `${w}x${h}`;
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    if (this.def && !this.userMoved) this.resetCamera();
   }
 
   setPuzzle(def, pieces) {
@@ -196,6 +201,7 @@ export class PuzzleView {
     this.camera.position.set(...scale(norm(this.def.camera.position), dist));
     this.controls.target.set(0, 0, 0);
     this.controls.update();
+    this.userMoved = false;
   }
 
   // colored(peça, face) define cor ou cinza; focus(peça) pisca
@@ -263,6 +269,8 @@ export class PuzzleView {
   }
 
   frame() {
+    // garantia: se a página abriu escondida, o ResizeObserver pode não ter avisado
+    if (`${this.container.clientWidth || 1}x${this.container.clientHeight || 1}` !== this.size) this.resize();
     const dt = Math.min(this.clock.getDelta(), 0.1);
     if (this.anim) {
       const a = this.anim;
