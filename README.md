@@ -11,6 +11,8 @@ npm run dev
 
 Abra http://localhost:5200
 
+Versão online: https://lucavinic.github.io/cubo-magico/ (publicada sozinha a cada envio para a branch `main`).
+
 ## O que tem
 
 - **Aprender**: lições pelo método de camadas. Cada caso mostra como deve ficar, a seta do próximo giro e o algoritmo movimento a movimento (tocar, pausar, voltar). As peças que ainda não importam ficam cinza, e a peça da vez pisca. "Tentar sozinho" deixa você fazer os movimentos.
