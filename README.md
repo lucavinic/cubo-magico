@@ -15,6 +15,7 @@ Versão online: https://lucavinic.github.io/cubo-magico/ (publicada sozinha a ca
 
 ## O que tem
 
+- **Montar comigo**: embaralha junto com você (você repete no seu cubo) e depois guia a montagem inteira, um giro de cada vez, pelo mesmo método das lições. Cada etapa continua de onde a anterior parou.
 - **Aprender**: lições pelo método de camadas. Cada caso mostra como deve ficar, a seta do próximo giro e o algoritmo movimento a movimento (tocar, pausar, voltar). As peças que ainda não importam ficam cinza, e a peça da vez pisca. "Tentar sozinho" deixa você fazer os movimentos.
 - **Praticar**: embaralhar, girar pelos botões ou teclado e desfazer.
 
@@ -24,4 +25,6 @@ Versão online: https://lucavinic.github.io/cubo-magico/ (publicada sozinha a ca
 npm run verificar
 ```
 
-Simula todas as lições e confere que cada algoritmo chega no objetivo sem desmontar o que já estava pronto. Em `tools/` também ficam os scripts de busca usados para achar os algoritmos do Megaminx e da Pyraminx.
+`npm run testar` monta dezenas de embaralhamentos de cada quebra-cabeça com o resolvedor e confere o resultado no motor 3D.
+
+`npm run verificar` simula todas as lições e confere que cada algoritmo chega no objetivo sem desmontar o que já estava pronto. Em `tools/` também ficam os scripts de busca usados para achar os algoritmos do Megaminx e da Pyraminx.

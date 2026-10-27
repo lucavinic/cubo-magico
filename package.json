@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --port 5200 --strictPort",
     "build": "vite build",
-    "verificar": "node tools/verificar.mjs"
+    "verificar": "node tools/verificar.mjs",
+    "testar": "node tools/testar-solver.mjs todos 30"
   },
   "dependencies": {
     "three": "^0.169.0"

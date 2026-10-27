@@ -1,6 +1,7 @@
 import { buildPuzzle, PuzzleState, parseAlg, invertMoves, moveToString } from './engine/puzzle.js';
 import { PUZZLES } from './puzzles/index.js';
 import { PuzzleView } from './render/view.js';
+import { createGuide } from './guide.js';
 
 const $ = (sel) => document.querySelector(sel);
 const view = new PuzzleView($('#canvas'));
@@ -8,7 +9,7 @@ const built = {};
 
 const app = {
   puzzleId: 'cubo3',
-  mode: 'aprender',
+  mode: 'montar',
   lessonIdx: 0,
   stepIdx: 0,
   moves: [],
@@ -52,6 +53,7 @@ function loadPuzzle(id) {
   app.playing = false;
   renderPuzzleTabs();
   if (app.mode === 'aprender') selectLesson(Math.min(app.lessonIdx, current().lessons.length - 1));
+  else if (app.mode === 'montar') guide.start();
   else startPractice();
 }
 
@@ -75,6 +77,7 @@ document.querySelectorAll('.modo').forEach((b) =>
     app.mode = b.dataset.modo;
     document.querySelectorAll('.modo').forEach((x) => x.classList.toggle('ativo', x === b));
     if (app.mode === 'aprender') selectLesson(app.lessonIdx);
+    else if (app.mode === 'montar') guide.start();
     else startPractice();
   }),
 );
@@ -86,6 +89,7 @@ $('#centralizar').addEventListener('click', () => view.resetCamera());
 
 function renderLessonList() {
   const list = $('#licoes');
+  if (app.mode === 'montar') return guide.renderSidebar();
   if (app.mode !== 'aprender') {
     list.innerHTML = `<li class="teclas" style="padding:4px 6px">Embaralhe e tente montar sozinho, usando o que aprendeu nas lições.</li>`;
     return;
@@ -302,6 +306,7 @@ function renderLessonPanel() {
 $('#painel').addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (!b) return;
+  if (app.mode === 'montar') return guide.click(b);
   if (app.mode === 'praticar') return practiceClick(b);
   if (b.dataset.step && !view.busy) return selectStep(Number(b.dataset.step));
   if (b.id === 'proxCaso' && !view.busy) return selectStep(app.stepIdx + 1), scrollPanelTop();
@@ -479,6 +484,7 @@ function practiceClick(b) {
 
 document.addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (app.mode === 'montar') return guide.key(e);
   const { def } = current();
   const userMoves = app.mode === 'praticar' || app.trying;
   if (userMoves && e.key.length === 1) {
@@ -497,6 +503,26 @@ document.addEventListener('keydown', (e) => {
     app.playing = false;
     forward();
   } else if (e.key === 'ArrowLeft') backward();
+});
+
+const HOLD = {
+  cubo3: 'verde de frente para você, amarelo em cima e branco embaixo.',
+  cubo2: 'branco embaixo, amarelo em cima e verde de frente para você.',
+  pyraminx: 'verde de frente para você, amarelo embaixo e uma ponta para cima.',
+  megaminx: 'branco embaixo, cinza em cima e verde de frente para você.',
+};
+
+const guide = createGuide({
+  view,
+  esc,
+  toast,
+  $,
+  current,
+  puzzleId: () => app.puzzleId,
+  pieces: () => built[app.puzzleId],
+  state: () => state,
+  speed: () => app.speed,
+  holdText: () => HOLD[app.puzzleId],
 });
 
 loadPuzzle('cubo3');
