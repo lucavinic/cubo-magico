@@ -519,6 +519,7 @@ const guide = createGuide({
   $,
   current,
   puzzleId: () => app.puzzleId,
+  mode: () => app.mode,
   pieces: () => built[app.puzzleId],
   state: () => state,
   speed: () => app.speed,

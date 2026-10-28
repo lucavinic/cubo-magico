@@ -7,7 +7,7 @@
     "dev": "vite --port 5200 --strictPort",
     "build": "vite build",
     "verificar": "node tools/verificar.mjs",
-    "testar": "node tools/testar-solver.mjs todos 30"
+    "testar": "node tools/testar-solver.mjs todos 30 && node tools/testar-cores.mjs && node tools/testar-aresta.mjs"
   },
   "dependencies": {
     "three": "^0.169.0"

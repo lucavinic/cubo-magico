@@ -8,6 +8,8 @@ import { sub, cross, dot, norm, add, scale, len } from '../engine/math.js';
 const GRAY = new THREE.Color('#2c3038');
 const BODY = new THREE.Color('#111316');
 const BASE_GLOW = 0.28;
+// adesivo ainda não pintado: cinza médio, diferente de qualquer cor
+const UNPAINTED = new THREE.Color('#4a5160');
 
 function insetPolygon(verts, normal, m) {
   // tira vértices repetidos
@@ -127,6 +129,20 @@ export class PuzzleView {
     this.anim = null;
     this.clock = new THREE.Clock();
 
+    // clique (sem arrastar) num adesivo: usado para pintar as cores
+    this.onPick = null;
+    const el = this.renderer.domElement;
+    let down = null;
+    el.addEventListener('pointerdown', (e) => (down = [e.clientX, e.clientY]));
+    el.addEventListener('pointerup', (e) => {
+      if (!down || !this.onPick) return;
+      const moved = Math.hypot(e.clientX - down[0], e.clientY - down[1]);
+      down = null;
+      if (moved > 6) return;
+      const hit = this.pick(e.clientX, e.clientY);
+      if (hit) this.onPick(hit);
+    });
+
     new ResizeObserver(() => this.resize()).observe(container);
     this.resize();
     this.renderer.setAnimationLoop(() => this.frame());
@@ -157,7 +173,7 @@ export class PuzzleView {
       const shrink = (v) => add(p.center, scale(sub(v, p.center), 0.985));
       const body = new THREE.Mesh(polyGeometry(p.solid.faces.map((f) => f.verts.map(shrink))), bodyMat);
       g.add(body);
-      g.userData.stickers = p.stickers.map((st) => {
+      g.userData.stickers = p.stickers.map((st, k) => {
         const poly = insetPolygon(st.verts, st.normal, inset).map((v) => add(shrink(v), scale(st.normal, 0.004)));
         const mat = new THREE.MeshStandardMaterial({
           color: faceColor[st.face],
@@ -168,6 +184,7 @@ export class PuzzleView {
           emissiveIntensity: BASE_GLOW,
         });
         const mesh = new THREE.Mesh(polyGeometry([poly]), mat);
+        mesh.userData.pick = { piece: p.id, sticker: k };
         g.add(mesh);
         return { mesh, face: st.face, color: faceColor[st.face] };
       });
@@ -202,6 +219,33 @@ export class PuzzleView {
     this.controls.target.set(0, 0, 0);
     this.controls.update();
     this.userMoved = false;
+  }
+
+  pick(x, y) {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(ndc, this.camera);
+    const hits = ray.intersectObjects(this.root.children, true);
+    for (const h of hits) {
+      if (h.object.userData.pick) return h.object.userData.pick;
+      return null; // bateu primeiro no corpo da peça
+    }
+    return null;
+  }
+
+  // cor de cada adesivo escolhida por fora (pintura); null = ainda sem cor
+  setStickerColors(colorOf) {
+    this.focusMats = [];
+    this.pieces.forEach((p, i) => {
+      this.groups[i].userData.stickers.forEach((st, k) => {
+        const c = colorOf(i, k);
+        const color = c ? new THREE.Color(c) : UNPAINTED;
+        st.mesh.material.color.copy(color);
+        st.mesh.material.emissive.copy(color);
+        st.mesh.material.emissiveIntensity = BASE_GLOW;
+      });
+    });
   }
 
   // colored(peça, face) define cor ou cinza; focus(peça) pisca

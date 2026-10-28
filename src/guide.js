@@ -2,14 +2,31 @@
 // montagem inteira, um giro de cada vez, continuando de onde parou.
 
 import { moveToString } from './engine/puzzle.js';
+import { rotate, dot } from './engine/math.js';
 import { createSolver } from './solver/solver.js';
+import { stateFromColors } from './solver/fromColors.js';
 
 const solvers = {};
+
+// como segurar: em que lado fica cada cor (vale para todos os passos)
+const GRIP = {
+  cubo3: [['Em cima', 'U'], ['De frente para você', 'F'], ['À direita', 'R'], ['À esquerda', 'L'], ['Embaixo', 'D'], ['Atrás', 'B']],
+  cubo2: [['Em cima', 'U'], ['De frente para você', 'F'], ['À direita', 'R'], ['À esquerda', 'L'], ['Embaixo', 'D'], ['Atrás', 'B']],
+  pyraminx: [['De frente para você', 'F'], ['À esquerda', 'E'], ['À direita', 'Di'], ['Embaixo (a base)', 'Y']],
+  megaminx: [['Em cima', 'U'], ['De frente para você', 'F'], ['À direita', 'R'], ['À esquerda', 'L'], ['Embaixo', 'D']],
+};
+
+// faces mostradas em quadradinhos para comparar (só cubos)
+const GRID_FACES = [
+  { name: 'Frente', axis: [0, 0, 1], col: [1, 0, 0], row: [0, -1, 0] },
+  { name: 'Cima', axis: [0, 1, 0], col: [1, 0, 0], row: [0, 0, 1] },
+  { name: 'Direita', axis: [1, 0, 0], col: [0, 0, -1], row: [0, -1, 0] },
+];
 
 export function createGuide(ctx) {
   const { view, esc, toast, $ } = ctx;
   const g = {
-    phase: 'inicio', // inicio | embaralhar | montar
+    phase: 'inicio', // inicio | segurar | embaralhar | pintar | montar
     scramble: [],
     scrIdx: 0,
     frames: [],
@@ -27,7 +44,10 @@ export function createGuide(ctx) {
   function randomScramble() {
     const d = def();
     const id = ctx.puzzleId();
-    const names = Object.keys(d.moves).filter((n) => !(id === 'pyraminx' && n === n.toLowerCase()));
+    // no cubo, o embaralhamento não usa a face de trás (B), que confunde quem está começando
+    const names = Object.keys(d.moves).filter(
+      (n) => !(id === 'pyraminx' && n === n.toLowerCase()) && !(id.startsWith('cubo') && n === 'B'),
+    );
     const seq = [];
     let last = null;
     for (let i = 0; i < d.scrambleLength; i++) {
@@ -42,6 +62,7 @@ export function createGuide(ctx) {
   }
 
   function start() {
+    view.onPick = null;
     g.phase = 'inicio';
     g.playing = false;
     ctx.state().reset();
@@ -67,9 +88,9 @@ export function createGuide(ctx) {
     }
   }
 
-  function beginSolve() {
+  function beginSolve(fromState = null) {
     const s = solver();
-    const fs = s.fast.applyAll(s.fast.solved(), g.scramble);
+    const fs = fromState || s.fast.applyAll(s.fast.solved(), g.scramble);
     const segments = s.solve(fs);
     g.frames = [];
     for (const seg of segments) {
@@ -85,6 +106,111 @@ export function createGuide(ctx) {
   }
 
   const frame = () => g.frames[g.cursor];
+
+  // ---------- pintar as cores do cubo da pessoa ----------
+
+  const fixedCenters = () => ['cubo3', 'megaminx'].includes(ctx.puzzleId());
+
+  function beginPaint() {
+    const fast = solver().fast;
+    g.paint = fast.slots.map((sl) => (fixedCenters() && ctx.pieces()[sl.piece].stickers.length === 1 ? sl.face : null));
+    g.brush = def().faces[0].name;
+    g.paintError = '';
+    g.phase = 'pintar';
+    g.playing = false;
+    ctx.state().reset();
+    view.sync(ctx.state());
+    view.clearArrow();
+    view.resetCamera();
+    view.onPick = (hit) => {
+      if (ctx.mode() !== 'montar' || g.phase !== 'pintar') return;
+      const slot = fast.pieceSlots[hit.piece][hit.sticker];
+      if (fixedCenters() && ctx.pieces()[hit.piece].stickers.length === 1) {
+        toast('Os centros não mudam de cor: eles mostram de que cor é cada face.');
+        return;
+      }
+      g.paint[slot] = g.paint[slot] === g.brush ? null : g.brush;
+      g.paintError = '';
+      refreshPaint();
+      render();
+    };
+    refreshPaint();
+    render();
+  }
+
+  function refreshPaint() {
+    const fast = solver().fast;
+    view.setStickerColors((i, k) => {
+      const c = g.paint[fast.pieceSlots[i][k]];
+      return c ? faceColor(c) : null;
+    });
+  }
+
+  function finishPaint() {
+    const s = solver();
+    const res = stateFromColors(s.fast, ctx.pieces(), g.paint, (i) => s.spec.pieceName(i), colorName);
+    if (res.error) {
+      g.paintError = res.error;
+      return render();
+    }
+    let ok = true;
+    try {
+      s.solve(res.state);
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      g.paintError =
+        'Essas cores não formam um quebra-cabeça possível de montar. Normalmente é uma peça pintada trocada (confira as cores de cada canto e de cada aresta) ou uma peça que foi tirada e colocada de volta virada.';
+      return render();
+    }
+    view.onPick = null;
+    const st = ctx.state();
+    st.quats = res.quats.map((q) => q.slice());
+    view.sync(st);
+    beginSolve(res.state);
+  }
+
+  function paintHtml() {
+    const fast = solver().fast;
+    const total = g.paint.length;
+    const done = g.paint.filter(Boolean).length;
+    const want = {};
+    const got = {};
+    fast.slots.forEach((sl, k) => {
+      want[sl.face] = (want[sl.face] || 0) + 1;
+      if (g.paint[k]) got[g.paint[k]] = (got[g.paint[k]] || 0) + 1;
+    });
+    const palette = def()
+      .faces.map((f) => {
+        const n = got[f.name] || 0;
+        const over = n > want[f.name];
+        return `<button class="pincel ${g.brush === f.name ? 'ativo' : ''}" data-cor="${f.name}">
+          <span class="amostra" style="background:${f.color}"></span>
+          <span>${esc(colorName(f.name))}<small class="${over ? 'demais' : ''}">${n} de ${want[f.name]}</small></span>
+        </button>`;
+      })
+      .join('');
+    return `
+      <p class="passo">Pintar meu cubo · ${done} de ${total} quadradinhos</p>
+      <h2>Pinte as cores do seu</h2>
+      <div class="barra"><span style="width:${(100 * done) / total}%"></span></div>
+      <ol class="como">
+        <li><strong>Segure o seu</strong> ${fixedCenters()
+          ? `com o centro <strong>${esc(colorName('U'))}</strong> em cima e o centro <strong>${esc(colorName('F'))}</strong> virado para você (os centros já estão pintados na tela).`
+          : 'de um jeito e não vire mais. A frente do modelo é a frente do seu.'}</li>
+        <li><strong>Escolha uma cor</strong> abaixo e <strong>clique nos quadradinhos</strong> do modelo que têm essa cor no seu.</li>
+        <li><strong>Arraste o modelo</strong> para pintar os outros lados. As bolinhas com letras mostram cada lado. Clicar de novo com a mesma cor apaga.</li>
+      </ol>
+      <div class="paleta">${palette}</div>
+      ${g.paintError ? `<div class="aviso-erro">${esc(g.paintError)}</div>` : ''}
+      <div class="controles">
+        <button class="btn" id="g-inicio">◀ Voltar</button>
+        <button class="btn primario grande" id="g-pintado" ${done < total ? 'disabled' : ''}>${done < total ? `Faltam ${total - done}` : 'Pronto, me ajude a montar ▶'}</button>
+      </div>
+      <div class="controles"><button class="btn" id="g-limpar">Limpar tudo</button></div>
+    `;
+  }
 
   function focusCurrent() {
     const f = frame();
@@ -214,6 +340,81 @@ export function createGuide(ctx) {
       .join('');
   }
 
+  const isCube = () => ctx.puzzleId().startsWith('cubo');
+  const faceColor = (name) => def().faces.find((f) => f.name === name).color;
+  const colorName = (name) => def().colorNames[name];
+
+  function gripList() {
+    return `<ul class="segurar">${GRIP[ctx.puzzleId()]
+      .map(
+        ([where, f]) =>
+          `<li><span class="amostra" style="background:${faceColor(f)}"></span><span>${esc(where)}: <strong>${esc(colorName(f))}</strong></span></li>`,
+      )
+      .join('')}</ul>`;
+  }
+
+  function gripStrip() {
+    const items = GRIP[ctx.puzzleId()].slice(0, 3);
+    return `<div class="lembrete">
+      <span>Segure sempre assim:</span>
+      ${items
+        .map(([where, f]) => `<span class="item"><span class="amostra mini" style="background:${faceColor(f)}"></span>${esc(where.replace(' para você', ''))}: ${esc(colorName(f))}</span>`)
+        .join('')}
+      <span class="nao-vire">Não vire o cubo inteiro: gire só a face que a seta mostra.</span>
+    </div>`;
+  }
+
+  // desenho do cubo montado visto de cima, de frente e da direita
+  function cubeDrawing() {
+    const n = ctx.puzzleId() === 'cubo2' ? 2 : 3;
+    const s = 26; // tamanho do quadradinho
+    const ox = 40;
+    const oy = 20 + n * s;
+    const iso = (x, y, z) => [ox + (x - z) * s * 0.87 + n * s * 0.87, oy + (x + z) * s * 0.5 - y * s];
+    const poly = (pts, color) =>
+      `<polygon points="${pts.map((p) => p.join(',')).join(' ')}" fill="${color}" stroke="#111316" stroke-width="3" stroke-linejoin="round"/>`;
+    let out = '';
+    for (let i = 0; i < n; i++)
+      for (let j = 0; j < n; j++) {
+        out += poly([iso(i, n, j), iso(i + 1, n, j), iso(i + 1, n, j + 1), iso(i, n, j + 1)], faceColor('U'));
+        out += poly([iso(i, n - j, n), iso(i + 1, n - j, n), iso(i + 1, n - j - 1, n), iso(i, n - j - 1, n)], faceColor('F'));
+        out += poly([iso(n, n - j, n - i), iso(n, n - j, n - i - 1), iso(n, n - j - 1, n - i - 1), iso(n, n - j - 1, n - i)], faceColor('R'));
+      }
+    const w = 2 * n * s * 0.87 + 80;
+    const h = 2 * n * s + 40;
+    return `<svg class="desenho" viewBox="0 0 ${w} ${h}" role="img" aria-label="Cubo com amarelo em cima, verde na frente e laranja à direita">${out}</svg>`;
+  }
+
+  // cores atuais de uma face do cubo, em quadradinhos
+  function faceGridHtml(face) {
+    const st = ctx.state();
+    const pieces = ctx.pieces();
+    const n = ctx.puzzleId() === 'cubo2' ? 2 : 3;
+    const h = n / 2;
+    const cells = Array(n * n).fill('#333');
+    pieces.forEach((p, i) => {
+      p.stickers.forEach((sk, k) => {
+        if (dot(st.stickerNormal(i, k), face.axis) < 0.99) return;
+        const pos = rotate(st.quats[i], sk.center);
+        const c = Math.round(dot(pos, face.col) + h - 0.5);
+        const r = Math.round(dot(pos, face.row) + h - 0.5);
+        if (c >= 0 && c < n && r >= 0 && r < n) cells[r * n + c] = faceColor(sk.face);
+      });
+    });
+    return `<div class="grade-face"><span>${face.name}</span><div class="grade" style="grid-template-columns:repeat(${n},1fr)">${cells
+      .map((c) => `<i style="background:${c}"></i>`)
+      .join('')}</div></div>`;
+  }
+
+  function compareHtml() {
+    if (!isCube()) return '';
+    return `<details class="comparar" open>
+      <summary>Compare com o seu cubo</summary>
+      <div class="grades">${GRID_FACES.map(faceGridHtml).join('')}</div>
+      <p class="teclas">É assim que o seu deve estar agora. Se alguma cor não bater, volte (◀) até onde estava igual.</p>
+    </details>`;
+  }
+
   function moveCard(mv, note) {
     return `<div class="giro-grande">
       <span class="mv">${esc(moveToString(mv))}</span>
@@ -229,7 +430,8 @@ export function createGuide(ctx) {
         <p class="passo">Montar comigo</p>
         <h2>Vamos montar juntos, do começo ao fim!</h2>
         <ol class="como">
-          <li><strong>Pegue seu ${esc(def().name.split(' (')[0].toLowerCase())} montado</strong> e segure igual à tela: ${esc(ctx.holdText())}</li>
+          <li><strong>Pegue seu ${esc(def().name.split(' (')[0].toLowerCase())} montado</strong> (cada face com uma cor só).</li>
+          <li><strong>Segure do jeito certo:</strong> na próxima tela eu mostro qual cor fica em cima e qual fica de frente. Isso é muito importante!</li>
           <li><strong>Embaralhe junto comigo:</strong> eu mostro um giro de cada vez e você faz o mesmo no seu.</li>
           <li><strong>Depois eu te guio na montagem inteira</strong>, um giro de cada vez, com uma seta mostrando para onde girar. Cada etapa continua de onde a anterior parou.</li>
         </ol>
@@ -237,9 +439,31 @@ export function createGuide(ctx) {
           <button class="btn primario grande" id="g-com">Embaralhar junto comigo</button>
         </div>
         <div class="controles">
+          <button class="btn primario grande" id="g-pintar">Meu cubo já está embaralhado: pintar as cores</button>
+        </div>
+        <div class="controles">
           <button class="btn" id="g-tela">Só na tela (embaralhar de uma vez)</button>
         </div>
-        <p class="teclas">Seu cubo já está bagunçado? Por enquanto eu só sei guiar a partir do embaralhamento que eu mesmo faço. Monte o seu uma vez seguindo o modo "Aprender", ou acompanhe aqui na tela para treinar.</p>
+        <p class="teclas">Seu cubo já está bagunçado? Escolha "pintar as cores": você pinta no modelo igual ao seu e eu te guio dali até o fim.</p>
+      `;
+      return;
+    }
+    if (g.phase === 'pintar') {
+      p.innerHTML = paintHtml();
+      return;
+    }
+    if (g.phase === 'segurar') {
+      p.innerHTML = `
+        <p class="passo">Antes de embaralhar</p>
+        <h2>Segure o seu assim</h2>
+        ${isCube() ? cubeDrawing() : ''}
+        ${gripList()}
+        <div class="agora-box"><strong>Importante</strong>${esc(ctx.holdText().charAt(0).toUpperCase() + ctx.holdText().slice(1))} Gire o seu inteiro na mão (sem mexer nas faces) até ficar igual. Depois disso, não vire mais: só gire a face que a seta mostrar.</div>
+        ${ctx.puzzleId() === 'cubo3' ? '<p class="teclas">Dica: olhe as peças do meio de cada face (os centros). Elas nunca saem do lugar. O centro amarelo vai para cima e o centro verde fica virado para você.</p>' : ''}
+        <div class="controles">
+          <button class="btn" id="g-inicio">◀ Voltar</button>
+          <button class="btn primario grande" id="g-segurei">Estou segurando assim ▶</button>
+        </div>
       `;
       return;
     }
@@ -249,6 +473,7 @@ export function createGuide(ctx) {
         <p class="passo">Embaralhando · giro ${Math.min(g.scrIdx + 1, g.scramble.length)} de ${g.scramble.length}</p>
         <h2>Embaralhe junto comigo</h2>
         <p>Faça no seu exatamente o giro que aparece. Siga a seta rosa no modelo. Vá com calma: se errar um giro, a montagem não vai bater.</p>
+        ${gripStrip()}
         <div class="barra"><span style="width:${(100 * g.scrIdx) / g.scramble.length}%"></span></div>
         ${doneAll ? `<div class="parabens">Pronto, embaralhado! Confira se o seu está igual ao da tela (gire o modelo com o mouse para ver todos os lados).</div>` : moveCard(g.scramble[g.scrIdx])}
         <div class="alg">${g.scramble
@@ -259,6 +484,7 @@ export function createGuide(ctx) {
           <button class="btn primario grande" id="g-prox">${doneAll ? 'Agora vamos montar! ▶' : 'Próximo giro ▶'}</button>
         </div>
         ${doneAll ? '' : `<div class="controles"><button class="btn" id="g-tocar">${g.playing ? 'Pausar' : 'Fazer todos sozinho'}</button></div>`}
+        ${compareHtml()}
         ${speedHtml()}
       `;
       return;
@@ -286,6 +512,7 @@ export function createGuide(ctx) {
       <p class="passo">Etapa ${cur + 1} de ${stages.length} · giro ${Math.min(movesDone + 1, g.totalMoves)} de ${g.totalMoves}</p>
       <h2>${esc(stage.title)}</h2>
       <div class="barra"><span style="width:${(100 * movesDone) / g.totalMoves}%"></span></div>
+      ${gripStrip()}
       ${isEnd ? `<div class="parabens">${esc(seg.text)}</div>` : `
         <p class="etapa-intro">${esc(stage.intro)}</p>
         <div class="agora-box"><strong>Agora</strong>${esc(seg.text)}</div>
@@ -300,6 +527,7 @@ export function createGuide(ctx) {
         <button class="btn primario grande" id="g-prox">${isEnd ? 'Continuar ▶' : 'Próximo giro ▶'}</button>
       </div>
       ${isEnd ? '' : `<div class="controles"><button class="btn" id="g-tocar">${g.playing ? 'Pausar' : 'Fazer este trecho sozinho'}</button></div>`}
+      ${compareHtml()}
       ${speedHtml()}
       <p class="teclas">Atalhos: <kbd>→</kbd> próximo giro, <kbd>←</kbd> voltar. <button class="link" id="g-reiniciar">Recomeçar do zero</button></p>
     `;
@@ -312,9 +540,32 @@ export function createGuide(ctx) {
   }
 
   function click(b) {
+    if (b.dataset.cor) {
+      g.brush = b.dataset.cor;
+      return render();
+    }
     switch (b.id) {
       case 'g-com':
+        g.phase = 'segurar';
+        ctx.state().reset();
+        view.sync(ctx.state());
+        view.paint(null, null);
+        view.clearArrow();
+        view.resetCamera();
+        return render();
+      case 'g-segurei':
         return beginScramble(true);
+      case 'g-inicio':
+        return start();
+      case 'g-pintar':
+        return beginPaint();
+      case 'g-pintado':
+        return finishPaint();
+      case 'g-limpar':
+        g.paint = g.paint.map((c, k) => (fixedCenters() && ctx.pieces()[solver().fast.slots[k].piece].stickers.length === 1 ? c : null));
+        g.paintError = '';
+        refreshPaint();
+        return render();
       case 'g-tela':
         return beginScramble(false);
       case 'g-prox':
